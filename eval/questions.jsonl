@@ -1,0 +1,20 @@
+{"question": "In which city is Meridian Pay headquartered?", "expected_answer": "Austin, Texas.", "source_doc": "company-overview.md"}
+{"question": "Who is the CEO of Meridian Pay?", "expected_answer": "Dana Okafor, who has led the company since it was founded.", "source_doc": "company-overview.md"}
+{"question": "How many paid time off (PTO) days do full-time employees get per year?", "expected_answer": "20 days of PTO per calendar year.", "source_doc": "pto-policy.md"}
+{"question": "How many unused PTO days can an employee carry over to the next year?", "expected_answer": "A maximum of 5 unused PTO days.", "source_doc": "pto-policy.md"}
+{"question": "How much paid parental leave does Meridian Pay offer?", "expected_answer": "16 weeks of fully paid parental leave for all new parents.", "source_doc": "pto-policy.md"}
+{"question": "What are the core collaboration hours employees must be available for?", "expected_answer": "10:00 AM to 2:00 PM Central Time, Monday through Friday.", "source_doc": "employee-handbook.md"}
+{"question": "How long is the probation period for new employees?", "expected_answer": "The first 90 days of employment.", "source_doc": "employee-handbook.md"}
+{"question": "What is the home office stipend for new employees?", "expected_answer": "A one-time stipend of 1,000 dollars.", "source_doc": "remote-work-policy.md"}
+{"question": "How much does Meridian Pay reimburse for home internet each month?", "expected_answer": "50 dollars per month.", "source_doc": "remote-work-policy.md"}
+{"question": "Within how many days must business expenses be submitted?", "expected_answer": "Within 30 days of the purchase.", "source_doc": "expense-policy.md"}
+{"question": "What is the daily meal allowance while traveling for work?", "expected_answer": "75 dollars per day.", "source_doc": "expense-policy.md"}
+{"question": "What is the minimum required password length for employee accounts?", "expected_answer": "At least 14 characters.", "source_doc": "security-policy.md"}
+{"question": "How quickly must a suspected security incident be reported?", "expected_answer": "Within one hour of discovery, through the #security-alerts channel.", "source_doc": "security-policy.md"}
+{"question": "How long must an engineer take to acknowledge a SEV1 incident?", "expected_answer": "Within 15 minutes.", "source_doc": "incident-response-policy.md"}
+{"question": "How long are customer transaction records retained?", "expected_answer": "Seven years, to comply with financial regulations.", "source_doc": "data-retention-policy.md"}
+{"question": "What is the maximum balance a standard Meridian Wallet can hold?", "expected_answer": "250,000 dollars.", "source_doc": "product-wallet.md"}
+{"question": "How much annual interest do funds in a Meridian Wallet earn?", "expected_answer": "2.5 percent annual interest, paid monthly.", "source_doc": "product-wallet.md"}
+{"question": "What is the fee for a Standard Transfer to an external bank account?", "expected_answer": "A flat fee of 1 dollar per transfer, regardless of amount.", "source_doc": "product-transfers.md"}
+{"question": "How much cash back does the Meridian Business Card earn?", "expected_answer": "1.5 percent cash back on all purchases.", "source_doc": "product-business-card.md"}
+{"question": "How much does the Growth plan cost per month?", "expected_answer": "49 dollars per month.", "source_doc": "pricing.md"}
