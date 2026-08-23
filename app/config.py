@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # --- Vector store ---
     database_url: str = Field(
-        default="postgresql://localhost:5432/postgres",
+        default="postgresql://localhost:5432/qna-database",
         validation_alias="DATABASE_URL",
     )
 
