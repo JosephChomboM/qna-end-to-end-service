@@ -1,0 +1,42 @@
+# The API — the Phase 6 image. Reads all config/secrets from the qna-secrets
+# Secret; finds Postgres via the qna-postgres Service (DATABASE_URL in the Secret).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qna-api
+  labels:
+    app: qna-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qna-api
+  template:
+    metadata:
+      labels:
+        app: qna-api
+    spec:
+      containers:
+        - name: api
+          # Phase 6 image on GHCR. For local kind/minikube you can instead build
+          # it locally with this same tag and load it into the cluster (see
+          # k8s/README.md); IfNotPresent then uses the loaded image.
+          image: ghcr.io/josephchombom/qna-end-to-end-service:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: qna-secrets
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20

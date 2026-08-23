@@ -1,0 +1,13 @@
+# Stable in-cluster address for the API. ClusterIP is enough to answer a query
+# from inside the cluster; use `kubectl port-forward` to reach it from your host.
+apiVersion: v1
+kind: Service
+metadata:
+  name: qna-api
+spec:
+  selector:
+    app: qna-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP

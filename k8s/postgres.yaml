@@ -1,0 +1,49 @@
+# In-cluster PostgreSQL + pgvector (the vector store). Minimal: one replica,
+# ephemeral storage (emptyDir — data is lost if the pod restarts, which is fine
+# for a demo since the API re-ingests on first query).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qna-postgres
+  labels:
+    app: qna-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qna-postgres
+  template:
+    metadata:
+      labels:
+        app: qna-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg16
+          envFrom:
+            - secretRef:
+                name: qna-secrets   # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "qna-database"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qna-postgres
+spec:
+  selector:
+    app: qna-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
