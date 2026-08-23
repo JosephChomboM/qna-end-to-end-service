@@ -215,9 +215,10 @@ def answer(s: Settings, client: AzureOpenAI, question: str, k: int | None = None
     k = k or s.top_k
     chunks = retrieve(s, client, question, k)
     context = build_context(chunks)
+    # Note: some models (e.g. gpt-5-mini) only accept the default temperature,
+    # so we don't set it explicitly. Retrieval + a grounding prompt do the work.
     resp = client.chat.completions.create(
         model=s.chat_deployment,
-        temperature=0,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"},
