@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 
 from app import rag
 from app.config import get_settings
+from app.observability import init_langfuse
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
@@ -50,11 +51,16 @@ async def lifespan(app: FastAPI):
     # Build settings + Azure client once per process (fails fast if config is missing).
     settings = get_settings()
     app.state.settings = settings
-    app.state.client = rag.get_client(settings)
+    # Langfuse (Phase 8): init first so the instrumented client shares its config.
+    app.state.langfuse = init_langfuse(settings)
+    # instrument=True -> the live client emits Langfuse traces when configured.
+    app.state.client = rag.get_client(settings, instrument=True)
     yield
+    if app.state.langfuse is not None:
+        app.state.langfuse.flush()  # send any buffered traces on shutdown
 
 
-app = FastAPI(title="Meridian Pay Document Q&A", version="0.3.5", lifespan=lifespan)
+app = FastAPI(title="Meridian Pay Document Q&A", version="0.8.0", lifespan=lifespan)
 
 # Allow the static page to call the API from another origin (e.g. opened as a
 # file:// page, or served from a different port). Wide-open is fine for a local
@@ -85,10 +91,39 @@ def ingest() -> IngestResponse:
 def query(req: QueryRequest) -> QueryResponse:
     settings = app.state.settings
     client = app.state.client
+    langfuse = app.state.langfuse
     # Auto-ingest on first use so a fresh store still answers (same as the CLI).
     if rag.count_chunks(settings) == 0:
         rag.ingest(settings, client)
-    answer_text, sources = rag.answer(settings, client, req.question, req.k)
+
+    if langfuse is None:
+        answer_text, chunks = rag.answer_with_chunks(settings, client, req.question, req.k)
+        sources = list(dict.fromkeys(c.doc for c in chunks))
+        return QueryResponse(answer=answer_text, sources=sources)
+
+    # Wrap the request in a Langfuse trace (SDK v4 API). The LLM + embedding
+    # calls inside answer_with_chunks are auto-traced by the instrumented client
+    # (token cost + latency); here we add the request span and retrieval quality.
+    with langfuse.start_as_current_observation(
+        name="query", as_type="span", input={"question": req.question}
+    ):
+        answer_text, chunks = rag.answer_with_chunks(settings, client, req.question, req.k)
+        sources = list(dict.fromkeys(c.doc for c in chunks))
+        distances = [c.distance for c in chunks]
+        langfuse.update_current_span(
+            output={"answer": answer_text, "sources": sources},
+            metadata={
+                "top_k": req.k or settings.top_k,
+                "num_chunks": len(chunks),
+                "retrieved_docs": sources,
+                "min_distance": min(distances, default=None),
+                "max_distance": max(distances, default=None),
+            },
+        )
+        langfuse.set_current_trace_io(
+            input={"question": req.question},
+            output={"answer": answer_text},
+        )
     return QueryResponse(answer=answer_text, sources=sources)
 
 

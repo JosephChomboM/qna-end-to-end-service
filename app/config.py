@@ -8,7 +8,7 @@ via `validation_alias`, so the env var each setting reads is explicit here.
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=800, validation_alias="CHUNK_SIZE")
     chunk_overlap: int = Field(default=120, validation_alias="CHUNK_OVERLAP")
     top_k: int = Field(default=4, validation_alias="TOP_K")
+
+    # --- Langfuse (Phase 8) — live tracing of /query. Optional: if the keys are
+    # empty, tracing is disabled and the service behaves exactly as before. ---
+    langfuse_public_key: str = Field(default="", validation_alias="LANGFUSE_PUBLIC_KEY")
+    langfuse_secret_key: str = Field(default="", validation_alias="LANGFUSE_SECRET_KEY")
+    langfuse_host: str = Field(
+        default="https://cloud.langfuse.com",
+        # Accept either LANGFUSE_HOST (the SDK's own name) or LANGFUSE_BASE_URL.
+        validation_alias=AliasChoices("LANGFUSE_HOST", "LANGFUSE_BASE_URL"),
+    )
 
 
 @lru_cache

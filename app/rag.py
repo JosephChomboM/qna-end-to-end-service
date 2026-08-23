@@ -86,7 +86,14 @@ def iter_corpus(corpus_dir: Path = CORPUS_DIR):
 # --------------------------------------------------------------------------- #
 # Clients
 # --------------------------------------------------------------------------- #
-def get_client(s: Settings) -> AzureOpenAI:
+def get_client(s: Settings, instrument: bool = False) -> AzureOpenAI:
+    """Build the Azure OpenAI client.
+
+    With instrument=True and Langfuse configured, return Langfuse's drop-in
+    AzureOpenAI wrapper, which auto-traces every chat/embeddings call (token
+    usage, cost, latency). Only the live API opts in (Phase 8); the CLI, eval,
+    and tests use the plain client so they don't emit traces.
+    """
     missing = [
         name
         for name, val in {
@@ -103,7 +110,14 @@ def get_client(s: Settings) -> AzureOpenAI:
             + ", ".join(missing)
             + "\nSet them in .env (see .env.example)."
         )
-    return AzureOpenAI(
+
+    if instrument and s.langfuse_public_key and s.langfuse_secret_key:
+        # Drop-in replacement: same API, emits a generation span per call.
+        from langfuse.openai import AzureOpenAI as ClientClass
+    else:
+        ClientClass = AzureOpenAI
+
+    return ClientClass(
         azure_endpoint=s.azure_endpoint,
         api_key=s.azure_api_key,
         api_version=s.azure_api_version,

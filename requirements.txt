@@ -17,3 +17,9 @@ pytest>=8.3             # unit tests + eval gate
 
 # Phase 6 — CI/CD
 ruff>=0.6              # linter (the "lint" pipeline step)
+
+# Phase 7 — experiment tracking
+mlflow>=2.16          # offline run comparison (chunk size / top-k / prompt)
+
+# Phase 8 — observability
+langfuse>=4.0         # live tracing of the /query path (latency, cost, retrieval)

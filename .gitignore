@@ -14,6 +14,7 @@ venv/
 # MLflow
 mlruns/
 mlartifacts/
+mlflow.db
 
 # OS / editor
 .DS_Store
