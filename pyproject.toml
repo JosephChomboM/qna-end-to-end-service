@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "db: test needs a running PostgreSQL + pgvector (no LLM API).",
+    "eval: RAG eval gate; needs Azure OpenAI configured (LLM + embeddings).",
+]

@@ -27,6 +27,10 @@ from app.config import Settings, get_settings
 
 CORPUS_DIR = Path(__file__).resolve().parent.parent / "data" / "corpus"
 
+# Table the vectors live in. It's a module constant (not user input) so tests can
+# point the store at an isolated table without touching the real corpus data.
+CHUNKS_TABLE = "chunks"
+
 
 # --------------------------------------------------------------------------- #
 # Chunking (pure function — unit-tested in Phase 4)
@@ -139,10 +143,10 @@ def ingest(s: Settings, client: AzureOpenAI) -> int:
     embeddings = embed_texts(client, s.embedding_deployment, [r[2] for r in records])
 
     with connect(s) as conn:
-        conn.execute("DROP TABLE IF EXISTS chunks")
+        conn.execute(f"DROP TABLE IF EXISTS {CHUNKS_TABLE}")
         conn.execute(
             f"""
-            CREATE TABLE chunks (
+            CREATE TABLE {CHUNKS_TABLE} (
                 id serial PRIMARY KEY,
                 doc text NOT NULL,
                 chunk_index int NOT NULL,
@@ -153,7 +157,7 @@ def ingest(s: Settings, client: AzureOpenAI) -> int:
         )
         with conn.cursor() as cur:
             cur.executemany(
-                "INSERT INTO chunks (doc, chunk_index, content, embedding) "
+                f"INSERT INTO {CHUNKS_TABLE} (doc, chunk_index, content, embedding) "
                 "VALUES (%s, %s, %s, %s)",
                 [
                     (doc, idx, content, Vector(emb))
@@ -167,7 +171,7 @@ def ingest(s: Settings, client: AzureOpenAI) -> int:
 def count_chunks(s: Settings) -> int:
     try:
         with connect(s) as conn:
-            row = conn.execute("SELECT count(*) FROM chunks").fetchone()
+            row = conn.execute(f"SELECT count(*) FROM {CHUNKS_TABLE}").fetchone()
             return int(row[0]) if row else 0
     except psycopg.errors.UndefinedTable:
         return 0
@@ -185,9 +189,9 @@ def retrieve(s: Settings, client: AzureOpenAI, query: str, k: int) -> list[Retri
     query_embedding = Vector(embed_texts(client, s.embedding_deployment, [query])[0])
     with connect(s) as conn:
         rows = conn.execute(
-            """
+            f"""
             SELECT doc, chunk_index, content, embedding <=> %s AS distance
-            FROM chunks
+            FROM {CHUNKS_TABLE}
             ORDER BY embedding <=> %s
             LIMIT %s
             """,
@@ -211,7 +215,11 @@ def build_context(chunks: list[Retrieved]) -> str:
     return "\n\n".join(f"[{c.doc}]\n{c.content}" for c in chunks)
 
 
-def answer(s: Settings, client: AzureOpenAI, question: str, k: int | None = None) -> tuple[str, list[str]]:
+def answer_with_chunks(
+    s: Settings, client: AzureOpenAI, question: str, k: int | None = None
+) -> tuple[str, list[Retrieved]]:
+    """Retrieve top-k, generate a grounded answer, and return both the answer
+    text and the retrieved chunks (so callers can inspect the context, e.g. eval)."""
     k = k or s.top_k
     chunks = retrieve(s, client, question, k)
     context = build_context(chunks)
@@ -225,6 +233,11 @@ def answer(s: Settings, client: AzureOpenAI, question: str, k: int | None = None
         ],
     )
     text = resp.choices[0].message.content or ""
+    return text, chunks
+
+
+def answer(s: Settings, client: AzureOpenAI, question: str, k: int | None = None) -> tuple[str, list[str]]:
+    text, chunks = answer_with_chunks(s, client, question, k)
     # De-duplicate source docs while preserving retrieval order.
     sources = list(dict.fromkeys(c.doc for c in chunks))
     return text, sources
