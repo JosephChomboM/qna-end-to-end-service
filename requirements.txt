@@ -1,0 +1,5 @@
+# Phase 1 — core RAG loop
+openai>=1.40            # AzureOpenAI client (chat + embeddings)
+psycopg[binary]>=3.2    # PostgreSQL driver
+pgvector>=0.3           # register the pgvector type with psycopg
+python-dotenv>=1.0      # load .env for the local script (formalized in Phase 2)
