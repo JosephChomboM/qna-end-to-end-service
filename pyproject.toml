@@ -6,6 +6,9 @@ line-length = 120
 select = ["E", "F", "I"]
 
 [tool.pytest.ini_options]
+# Put the project root on sys.path so `import app` works regardless of how
+# pytest is invoked (bare `pytest` console script, as in CI, or `python -m pytest`).
+pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
     "db: test needs a running PostgreSQL + pgvector (no LLM API).",
