@@ -14,52 +14,18 @@ os.getenv calls here with pydantic-settings; for now this stays deliberately thi
 
 from __future__ import annotations
 
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import psycopg
-from dotenv import load_dotenv
 from openai import AzureOpenAI
 from pgvector import Vector
 from pgvector.psycopg import register_vector
 
-load_dotenv()
+from app.config import Settings, get_settings
 
 CORPUS_DIR = Path(__file__).resolve().parent.parent / "data" / "corpus"
-
-
-# --------------------------------------------------------------------------- #
-# Config (thin; formalized with pydantic-settings in Phase 2)
-# --------------------------------------------------------------------------- #
-@dataclass(frozen=True)
-class Settings:
-    database_url: str
-    azure_endpoint: str
-    azure_api_key: str
-    azure_api_version: str
-    chat_deployment: str
-    embedding_deployment: str
-    embedding_dim: int
-    chunk_size: int
-    chunk_overlap: int
-    top_k: int
-
-
-def get_settings() -> Settings:
-    return Settings(
-        database_url=os.getenv("DATABASE_URL", "postgresql://localhost:5432/postgres"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT", ""),
-        azure_api_key=os.getenv("AZURE_OPENAI_API_KEY", ""),
-        azure_api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21"),
-        chat_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", ""),
-        embedding_deployment=os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", ""),
-        embedding_dim=int(os.getenv("EMBEDDING_DIM", "1536")),
-        chunk_size=int(os.getenv("CHUNK_SIZE", "800")),
-        chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "120")),
-        top_k=int(os.getenv("TOP_K", "4")),
-    )
 
 
 # --------------------------------------------------------------------------- #

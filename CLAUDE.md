@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A complete, small RAG system built to **teach one coworker the shape of a modern ML/AI
+A complete, small RAG system built to **teach the shape of a modern ML/AI
 system end-to-end**. The value is not any single tool — it's showing how one problem
 (answering questions over a document corpus) pulls in each layer *when the problem
 demands it*.

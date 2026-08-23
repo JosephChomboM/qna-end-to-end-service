@@ -2,4 +2,7 @@
 openai>=1.40            # AzureOpenAI client (chat + embeddings)
 psycopg[binary]>=3.2    # PostgreSQL driver
 pgvector>=0.3           # register the pgvector type with psycopg
-python-dotenv>=1.0      # load .env for the local script (formalized in Phase 2)
+
+# Phase 2 — config / secrets
+pydantic-settings>=2.4  # typed settings loaded from env / .env
+python-dotenv>=1.0      # .env parsing (used by pydantic-settings)
