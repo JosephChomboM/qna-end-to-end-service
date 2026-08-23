@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A complete, small RAG system built to **teach the shape of a modern ML/AI
+A complete, small RAG system built to **teach one coworker the shape of a modern ML/AI
 system end-to-end**. The value is not any single tool — it's showing how one problem
 (answering questions over a document corpus) pulls in each layer *when the problem
 demands it*.
@@ -83,6 +83,19 @@ being comparable and the CI gate becomes noise.
 - Wrap the loop in `/ingest` and `/query` endpoints.
 - **Done when:** `POST /query` returns the same answer the script did.
 
+### Phase 3.5 — Minimal frontend
+- A single static page (`frontend/index.html` + a little JS) with a text box and a
+  results area that `fetch`es `POST /query` and renders the answer + sources.
+- **Keep it plain** — no build step, no framework. The teaching point is
+  *frontend calls backend*, not web tooling.
+- The backend stays the same FastAPI service; the page is served as static files (or
+  opened directly against the running API). Enable CORS for the API if the page is
+  served from a different origin.
+- **Note for the teach:** all RAG logic — LLM calls, embeddings, pgvector, keys —
+  stays server-side. The page only sends a question and displays a response. This is
+  the moment to show *why* the API layer exists and can't live in the browser.
+- **Done when:** typing a question in the page returns a grounded answer with sources.
+
 ### Phase 4 — Testing + RAG eval
 - Unit tests: chunking, retrieval.
 - **RAG eval test:** run the frozen question set, score faithfulness/relevance,
@@ -121,7 +134,9 @@ being comparable and the CI gate becomes noise.
 ├── app/
 │   ├── config.py          # pydantic-settings
 │   ├── rag.py             # core loop: ingest/chunk/embed/retrieve/answer
-│   └── main.py            # FastAPI endpoints
+│   └── main.py            # FastAPI endpoints (serves /query, /ingest)
+├── frontend/
+│   └── index.html         # static page that fetches /query
 ├── data/corpus/           # synthetic markdown docs
 ├── eval/
 │   ├── questions.jsonl    # frozen eval set

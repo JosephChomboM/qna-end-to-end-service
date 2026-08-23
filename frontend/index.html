@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meridian Pay — Document Q&A</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem; line-height: 1.5;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    p.sub { margin-top: 0; opacity: 0.7; font-size: 0.9rem; }
+    form { display: flex; gap: 0.5rem; margin: 1.5rem 0; }
+    input[type="text"] {
+      flex: 1; padding: 0.65rem 0.8rem; font-size: 1rem;
+      border: 1px solid #8888; border-radius: 8px; background: transparent; color: inherit;
+    }
+    button {
+      padding: 0.65rem 1.1rem; font-size: 1rem; border: 0; border-radius: 8px;
+      background: #2f6df6; color: #fff; cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    #answer {
+      white-space: pre-wrap; padding: 1rem; border: 1px solid #8884;
+      border-radius: 8px; min-height: 3rem; margin-top: 0.5rem;
+    }
+    #sources { margin-top: 1rem; font-size: 0.9rem; }
+    #sources ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
+    .muted { opacity: 0.6; }
+    .error { color: #d33; }
+  </style>
+</head>
+<body>
+  <h1>Meridian Pay — Document Q&amp;A</h1>
+  <p class="sub">Ask a question about the internal knowledge base. Answers are grounded in the corpus.</p>
+
+  <form id="qa-form">
+    <input id="question" type="text" placeholder="e.g. How many PTO days do employees get?" autocomplete="off" required />
+    <button id="ask" type="submit">Ask</button>
+  </form>
+
+  <div id="answer" class="muted">Your answer will appear here.</div>
+  <div id="sources"></div>
+
+  <script>
+    // The page holds NO RAG logic — no keys, no embeddings, no DB. It only sends
+    // the question to the backend and renders what comes back. That separation is
+    // the whole point: the API layer can't live in the browser.
+    //
+    // If this file is opened directly (file://), talk to the local API; if it's
+    // served BY the API, use same-origin relative paths.
+    const API_BASE = location.protocol === "file:" ? "http://localhost:8000" : "";
+
+    const form = document.getElementById("qa-form");
+    const input = document.getElementById("question");
+    const askBtn = document.getElementById("ask");
+    const answerEl = document.getElementById("answer");
+    const sourcesEl = document.getElementById("sources");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = input.value.trim();
+      if (!question) return;
+
+      askBtn.disabled = true;
+      answerEl.className = "muted";
+      answerEl.textContent = "Thinking…";
+      sourcesEl.innerHTML = "";
+
+      try {
+        const res = await fetch(`${API_BASE}/query`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+        if (!res.ok) {
+          const detail = await res.text();
+          throw new Error(`HTTP ${res.status}: ${detail}`);
+        }
+        const data = await res.json();
+        answerEl.className = "";
+        answerEl.textContent = data.answer;
+        if (data.sources && data.sources.length) {
+          sourcesEl.innerHTML =
+            "<strong>Sources</strong><ul>" +
+            data.sources.map((s) => `<li>${s}</li>`).join("") +
+            "</ul>";
+        }
+      } catch (err) {
+        answerEl.className = "error";
+        answerEl.textContent = "Request failed: " + err.message;
+      } finally {
+        askBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

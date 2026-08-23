@@ -17,12 +17,17 @@ Run locally:
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app import rag
 from app.config import get_settings
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
 class QueryRequest(BaseModel):
@@ -49,7 +54,17 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Meridian Pay Document Q&A", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Meridian Pay Document Q&A", version="0.3.5", lifespan=lifespan)
+
+# Allow the static page to call the API from another origin (e.g. opened as a
+# file:// page, or served from a different port). Wide-open is fine for a local
+# teaching setup; a real deployment would pin allowed origins.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
@@ -75,3 +90,8 @@ def query(req: QueryRequest) -> QueryResponse:
         rag.ingest(settings, client)
     answer_text, sources = rag.answer(settings, client, req.question, req.k)
     return QueryResponse(answer=answer_text, sources=sources)
+
+
+# Serve the static frontend at "/". Mounted last so the API routes above take
+# precedence; GET / returns frontend/index.html (html=True).
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
