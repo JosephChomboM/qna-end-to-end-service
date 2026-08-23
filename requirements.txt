@@ -14,3 +14,6 @@ httpx>=0.27             # TestClient dependency (also handy for smoke tests)
 
 # Phase 4 — testing + RAG eval
 pytest>=8.3             # unit tests + eval gate
+
+# Phase 6 — CI/CD
+ruff>=0.6              # linter (the "lint" pipeline step)

@@ -1,3 +1,10 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# Lean, deterministic set: pyflakes (F), pycodestyle errors (E), import sort (I).
+select = ["E", "F", "I"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [

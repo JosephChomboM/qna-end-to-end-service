@@ -9,9 +9,9 @@ running PostgreSQL + pgvector.
 from __future__ import annotations
 
 import pytest
+from pgvector import Vector
 
 from app import rag
-from pgvector import Vector
 
 # Deterministic 3-d "embeddings": each topic points along its own axis, so we
 # know exactly which rows should rank nearest for a given query vector.
