@@ -1,0 +1,38 @@
+# Phase 5 — bring up the whole thing: API + postgres/pgvector.
+#   docker compose up --build
+# Then open http://localhost:8000/ or POST http://localhost:8000/query
+#
+# Azure OpenAI credentials come from .env (env_file below). DATABASE_URL is
+# overridden here to point the API at the `db` service instead of localhost.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: qna-database
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"   # host 5432 is taken by the local Postgres; expose on 5433
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d qna-database"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    env_file: .env               # Azure keys/endpoint/deployments
+    environment:
+      # Overrides the DATABASE_URL from .env so the API talks to the db service.
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/qna-database
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
