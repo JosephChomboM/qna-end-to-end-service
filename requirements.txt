@@ -10,6 +10,7 @@ python-dotenv>=1.0      # .env parsing (used by pydantic-settings)
 # Phase 3 — FastAPI
 fastapi>=0.115          # web framework for /ingest and /query
 uvicorn[standard]>=0.30 # ASGI server
+slowapi>=0.1.9         # per-IP + global rate limit on /query (public demo)
 httpx>=0.27             # TestClient dependency (also handy for smoke tests)
 
 # Phase 4 — testing + RAG eval

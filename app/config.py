@@ -40,6 +40,15 @@ class Settings(BaseSettings):
     )
     embedding_dim: int = Field(default=1536, validation_alias="EMBEDDING_DIM")
 
+    # --- Public-demo guards ---
+    # Per-IP and global request caps on /query keep the LLM quota from being
+    # drained by one visitor (or a bot). In-memory, so they reset on restart.
+    rate_limit_per_minute: int = Field(default=10, validation_alias="RATE_LIMIT_PER_MINUTE")
+    rate_limit_per_day: int = Field(default=300, validation_alias="RATE_LIMIT_PER_DAY")
+    # If set, POST /ingest requires this value in the X-Admin-Token header
+    # (ingest drops and rebuilds the table, so it must not be open on a public URL).
+    admin_token: str = Field(default="", validation_alias="ADMIN_TOKEN")
+
     # --- Retrieval / chunking (tuned in Phase 7) ---
     chunk_size: int = Field(default=800, validation_alias="CHUNK_SIZE")
     chunk_overlap: int = Field(default=120, validation_alias="CHUNK_OVERLAP")

@@ -2,7 +2,7 @@
 
 Exposes the same pipeline the CLI uses, as HTTP endpoints:
 
-    POST /ingest  -> (re)build the vector store from the corpus
+    POST /ingest  -> (re)build the vector store from the corpus (X-Admin-Token if set)
     POST /query   -> {"question": "..."} -> {"answer": ..., "sources": [...]}
     GET  /health  -> liveness check
 
@@ -19,16 +19,38 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app import rag
 from app.config import get_settings
 from app.observability import init_langfuse
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+# Rate limits on /query protect the free LLM quota on a public URL: one cap per
+# client IP, plus one shared cap for the whole service. Limits are read once at
+# import time; counters live in memory, so they reset when the process restarts.
+_settings = get_settings()
+limiter = Limiter(key_func=get_remote_address)
+_PER_MINUTE = f"{_settings.rate_limit_per_minute}/minute"
+_PER_DAY = f"{_settings.rate_limit_per_day}/day"
+
+
+def _global_key(request: Request) -> str:
+    return "global"
+
+
+def require_admin(x_admin_token: str | None = Header(default=None)) -> None:
+    """Gate /ingest. With ADMIN_TOKEN unset (local dev) it stays open."""
+    expected = get_settings().admin_token
+    if expected and x_admin_token != expected:
+        raise HTTPException(status_code=403, detail="Invalid or missing X-Admin-Token")
 
 
 class QueryRequest(BaseModel):
@@ -61,6 +83,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Meridian Pay Document Q&A", version="0.8.0", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Allow the static page to call the API from another origin (e.g. opened as a
 # file:// page, or served from a different port). Wide-open is fine for a local
@@ -78,7 +102,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/ingest", response_model=IngestResponse)
+@app.post("/ingest", response_model=IngestResponse, dependencies=[Depends(require_admin)])
 def ingest() -> IngestResponse:
     settings = app.state.settings
     client = app.state.client
@@ -88,7 +112,9 @@ def ingest() -> IngestResponse:
 
 
 @app.post("/query", response_model=QueryResponse)
-def query(req: QueryRequest) -> QueryResponse:
+@limiter.limit(_PER_MINUTE)
+@limiter.limit(_PER_DAY, key_func=_global_key)
+def query(request: Request, req: QueryRequest) -> QueryResponse:
     settings = app.state.settings
     client = app.state.client
     langfuse = app.state.langfuse

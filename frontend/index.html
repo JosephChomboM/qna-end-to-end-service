@@ -76,6 +76,9 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question }),
         });
+        if (res.status === 429) {
+          throw new Error("Too many questions right now — this is a free demo with a request cap. Try again in a minute.");
+        }
         if (!res.ok) {
           const detail = await res.text();
           throw new Error(`HTTP ${res.status}: ${detail}`);
@@ -91,7 +94,7 @@
         }
       } catch (err) {
         answerEl.className = "error";
-        answerEl.textContent = "Request failed: " + err.message;
+        answerEl.textContent = err.message.startsWith("HTTP") ? "Request failed: " + err.message : err.message;
       } finally {
         askBtn.disabled = false;
       }

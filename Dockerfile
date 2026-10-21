@@ -19,4 +19,7 @@ COPY frontend ./frontend
 EXPOSE 8000
 
 # `python -m uvicorn` puts the working dir (/code) on sys.path so `app` imports.
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --proxy-headers: behind a platform proxy (Render, Cloud Run...) the real client IP
+# arrives in X-Forwarded-For, which the per-IP rate limit needs. Hosts that inject
+# $PORT (Render) are honored; locally it defaults to 8000.
+CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
